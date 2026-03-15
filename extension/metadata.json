@@ -1,0 +1,8 @@
+{
+    "uuid": "claude-pulse@delfour.co",
+    "name": "Claude Pulse",
+    "description": "Monitor your Claude Code agents in real-time from your GNOME desktop. Shows active agent count in the top panel with a dropdown listing agents, their type, project, duration and profile. Desktop notifications when agents finish. Multi-profile support.",
+    "shell-version": ["45", "46", "47", "48", "49"],
+    "url": "https://github.com/delfour-co/claude-pulse",
+    "version": 1
+}

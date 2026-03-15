@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-shell:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: ./scripts ./hooks
+
+  lint-js:
+    name: JavaScript syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JS syntax
+        run: node --check extension/extension.js
+
+  validate-metadata:
+    name: Validate metadata.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      - name: Validate metadata
+        run: |
+          jq . extension/metadata.json > /dev/null
+          UUID=$(jq -r '.uuid' extension/metadata.json)
+          NAME=$(jq -r '.name' extension/metadata.json)
+          VERSIONS=$(jq -r '.["shell-version"] | length' extension/metadata.json)
+          [ "$UUID" = "claude-pulse@delfour.co" ] || { echo "ERROR: uuid mismatch"; exit 1; }
+          [ -n "$NAME" ] || { echo "ERROR: name is empty"; exit 1; }
+          [ "$VERSIONS" -gt 0 ] || { echo "ERROR: no shell-version entries"; exit 1; }
+          echo "✓ metadata.json is valid (uuid=$UUID, name=$NAME, versions=$VERSIONS)"
+
+  test-hook:
+    name: Test hook script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      - name: Test SubagentStart event
+        run: |
+          OUTPUT=$(echo '{"hook_event_name":"SubagentStart","agent_id":"test-001","agent_type":"Explore","session_id":"sess-001","cwd":"/tmp/project"}' | \
+            CLAUDE_PROFILE=test XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh && \
+            cat /tmp/test-data/claude-pulse/events.jsonl)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | jq -e '.event == "SubagentStart"' > /dev/null
+          echo "$OUTPUT" | jq -e '.agent_id == "test-001"' > /dev/null
+          echo "$OUTPUT" | jq -e '.profile == "test"' > /dev/null
+          echo "✓ SubagentStart event is valid"
+      - name: Test SubagentStop event
+        run: |
+          echo '{"hook_event_name":"SubagentStop","agent_id":"test-001","agent_type":"Explore","session_id":"sess-001","cwd":"/tmp/project"}' | \
+            CLAUDE_PROFILE=test XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh
+          LAST=$(tail -1 /tmp/test-data/claude-pulse/events.jsonl)
+          echo "$LAST" | jq -e '.event == "SubagentStop"' > /dev/null
+          echo "✓ SubagentStop event is valid"
+      - name: Test SessionStart event
+        run: |
+          echo '{"hook_event_name":"SessionStart","session_id":"sess-001","cwd":"/tmp/project","model":"claude-sonnet-4-6"}' | \
+            CLAUDE_PROFILE=ci XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh
+          LAST=$(tail -1 /tmp/test-data/claude-pulse/events.jsonl)
+          echo "$LAST" | jq -e '.event == "SessionStart"' > /dev/null
+          echo "$LAST" | jq -e '.model == "claude-sonnet-4-6"' > /dev/null
+          echo "✓ SessionStart event is valid"
+      - name: Test SessionEnd event
+        run: |
+          echo '{"hook_event_name":"SessionEnd","session_id":"sess-001","cwd":"/tmp/project"}' | \
+            CLAUDE_PROFILE=ci XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh
+          LAST=$(tail -1 /tmp/test-data/claude-pulse/events.jsonl)
+          echo "$LAST" | jq -e '.event == "SessionEnd"' > /dev/null
+          echo "✓ SessionEnd event is valid"

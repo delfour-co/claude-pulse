@@ -1,0 +1,34 @@
+.claude-panel-label {
+    margin-left: 4px;
+    font-weight: bold;
+    color: #ccc;
+}
+
+.claude-panel-label-active {
+    margin-left: 4px;
+    font-weight: bold;
+    color: #8be9fd;
+}
+
+.claude-header-label {
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.claude-agent-duration {
+    color: #999;
+    margin-left: 8px;
+    font-size: 0.9em;
+}
+
+.claude-profile-tag {
+    color: #bd93f9;
+    margin-left: 6px;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.claude-no-agents {
+    color: #999;
+    font-style: italic;
+}

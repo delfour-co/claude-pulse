@@ -1,0 +1,9 @@
+*.zip
+*.shell-extension.zip
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.DS_Store
+node_modules/
