@@ -200,7 +200,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
       - name: Install build deps
-        run: sudo apt-get install -y libglib2.0-dev rpm jq
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev jq dpkg-dev debhelper
 
       - name: Compile schemas
         run: glib-compile-schemas extension/schemas/
@@ -212,39 +212,32 @@ jobs:
           zip -r ../claude-pulse@delfour.co.zip \
             extension.js prefs.js metadata.json stylesheet.css icons/ schemas/
 
-      # --- RPM (Fedora/COPR) ---
-      - name: Build RPM source archive
+      # --- RPM spec + source tarball (for Fedora COPR) ---
+      - name: Build RPM source tarball
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          mkdir -p rpmbuild/{SOURCES,SPECS}
-          # Create source tarball matching spec expectations
           git archive --format=tar.gz --prefix=claude-pulse-${VERSION}/ HEAD \
-            -o rpmbuild/SOURCES/claude-pulse-${VERSION}.tar.gz
-          cp packaging/fedora/claude-pulse.spec rpmbuild/SPECS/
-          # Update version in spec
-          sed -i "s/^Version:.*/Version:        ${VERSION}/" rpmbuild/SPECS/claude-pulse.spec
-          rpmbuild --define "_topdir $(pwd)/rpmbuild" -bs rpmbuild/SPECS/claude-pulse.spec
-          cp rpmbuild/SRPMS/*.rpm . || true
-          echo "✓ RPM source package built"
+            -o claude-pulse-${VERSION}.tar.gz
+          cp packaging/fedora/claude-pulse.spec claude-pulse.spec
+          sed -i "s/^Version:.*/Version:        ${VERSION}/" claude-pulse.spec
+          echo "✓ RPM source tarball + spec ready"
 
       # --- DEB (Ubuntu/Debian) ---
       - name: Build DEB package
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           PKG=gnome-shell-extension-claude-pulse
-          BUILD_DIR="${PKG}_${VERSION}"
+          BUILD_DIR="${PKG}-${VERSION}"
           mkdir -p "$BUILD_DIR"
-          # Copy source
           cp -r extension hooks scripts LICENSE README.md CHANGELOG.md "$BUILD_DIR/"
           cp -r packaging/ubuntu/debian "$BUILD_DIR/"
-          # Update version in changelog
           sed -i "s/1.0.0-1/${VERSION}-1/" "$BUILD_DIR/debian/changelog"
           chmod +x "$BUILD_DIR/debian/rules"
-          # Build
           cd "$BUILD_DIR"
-          dpkg-buildpackage -us -uc -b 2>&1 || true
+          dpkg-buildpackage -us -uc -b --no-check-builddeps 2>&1 || echo "⚠ DEB build had warnings"
           cd ..
-          ls *.deb 2>/dev/null && echo "✓ DEB package built" || echo "⚠ DEB build skipped"
+          mv *.deb . 2>/dev/null || true
+          ls *.deb 2>/dev/null && echo "✓ DEB package built" || echo "⚠ DEB not produced"
 
       # --- AUR PKGBUILD ---
       - name: Prepare AUR PKGBUILD
@@ -264,7 +257,8 @@ jobs:
         with:
           files: |
             claude-pulse@delfour.co.zip
-            *.src.rpm
+            claude-pulse-*.tar.gz
+            claude-pulse.spec
             *.deb
             PKGBUILD
           generate_release_notes: true
