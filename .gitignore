@@ -1,9 +1,11 @@
-*.zip
-*.shell-extension.zip
-*.swp
-*.swo
 *~
-.idea/
-.vscode/
+claude-pulse@delfour.co.zip
 .DS_Store
+extension/schemas/gschemas.compiled
+.idea/
 node_modules/
+*.shell-extension.zip
+*.swo
+*.swp
+.vscode/
+*.zip

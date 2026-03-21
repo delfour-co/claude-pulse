@@ -1,34 +1,131 @@
+/* Panel */
 .claude-panel-label {
-    margin-left: 4px;
+    margin-left: 2px;
     font-weight: bold;
-    color: #ccc;
+    font-size: 0.9em;
+    color: #888;
 }
 
 .claude-panel-label-active {
-    margin-left: 4px;
+    margin-left: 2px;
     font-weight: bold;
+    font-size: 0.9em;
     color: #8be9fd;
 }
 
+/* Header */
 .claude-header-label {
     font-weight: bold;
-    font-size: 1em;
+    font-size: 0.95em;
 }
 
-.claude-agent-duration {
-    color: #999;
-    margin-left: 8px;
-    font-size: 0.9em;
+/* Section titles */
+.claude-section-title {
+    color: #777;
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 4px 0 0 0;
+    margin: 0;
 }
 
-.claude-profile-tag {
-    color: #bd93f9;
-    margin-left: 6px;
-    font-size: 0.9em;
-    font-style: italic;
+/* Metrics line under graph */
+.claude-metrics-line {
+    color: #667;
+    font-size: 0.75em;
+    padding: 0;
+    margin: 0;
 }
 
+/* No agents */
 .claude-no-agents {
-    color: #999;
+    color: #888;
     font-style: italic;
+    font-size: 0.8em;
+}
+
+/* Session metrics detail */
+.claude-metrics-detail {
+    color: #555;
+    font-size: 0.7em;
+    padding: 0;
+    margin: 0;
+}
+
+/* Profile badge pill — default theme (cyan) */
+.claude-profile-badge {
+    background-color: rgba(80, 180, 220, 0.2);
+    color: #6cc;
+    font-size: 0.65em;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 1px 8px;
+    margin-left: 4px;
+}
+
+/* Footer icons */
+.claude-footer-button {
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.claude-footer-button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Theme: Compact ===== */
+.claude-theme-compact .claude-section-title {
+    color: #666;
+}
+
+.claude-theme-compact .claude-profile-badge {
+    background-color: rgba(70, 150, 190, 0.15);
+    color: #7aabb8;
+}
+
+.claude-theme-compact .claude-metrics-line {
+    color: #556;
+}
+
+/* ===== Theme: Cyberpunk ===== */
+.claude-theme-cyberpunk .claude-section-title {
+    color: #0ff;
+}
+
+.claude-theme-cyberpunk .claude-metrics-line {
+    color: rgba(0, 255, 255, 0.5);
+}
+
+.claude-theme-cyberpunk .claude-profile-badge {
+    background-color: rgba(255, 0, 150, 0.25);
+    color: #ff69b4;
+}
+
+.claude-theme-cyberpunk .claude-metrics-detail {
+    color: rgba(0, 255, 255, 0.4);
+}
+
+.claude-theme-cyberpunk .claude-no-agents {
+    color: rgba(0, 255, 255, 0.5);
+}
+
+/* ===== Theme: Tron ===== */
+.claude-theme-tron .claude-section-title {
+    color: rgba(0, 160, 255, 0.7);
+}
+
+.claude-theme-tron .claude-metrics-line {
+    color: rgba(0, 140, 220, 0.5);
+}
+
+.claude-theme-tron .claude-profile-badge {
+    background-color: rgba(255, 140, 0, 0.2);
+    color: #ffa31a;
+}
+
+.claude-theme-tron .claude-metrics-detail {
+    color: rgba(0, 140, 220, 0.4);
+}
+
+.claude-theme-tron .claude-no-agents {
+    color: rgba(0, 140, 220, 0.5);
 }

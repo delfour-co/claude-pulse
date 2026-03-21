@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -26,62 +27,211 @@ jobs:
         with:
           node-version: 20
       - name: Check JS syntax
-        run: node --check extension/extension.js
+        run: |
+          node --check extension/extension.js
+          node --check extension/prefs.js
 
   validate-metadata:
     name: Validate metadata.json
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install jq
-        run: sudo apt-get install -y jq
       - name: Validate metadata
         run: |
           jq . extension/metadata.json > /dev/null
           UUID=$(jq -r '.uuid' extension/metadata.json)
           NAME=$(jq -r '.name' extension/metadata.json)
           VERSIONS=$(jq -r '.["shell-version"] | length' extension/metadata.json)
+          SCHEMA=$(jq -r '.["settings-schema"] // empty' extension/metadata.json)
           [ "$UUID" = "claude-pulse@delfour.co" ] || { echo "ERROR: uuid mismatch"; exit 1; }
           [ -n "$NAME" ] || { echo "ERROR: name is empty"; exit 1; }
           [ "$VERSIONS" -gt 0 ] || { echo "ERROR: no shell-version entries"; exit 1; }
-          echo "✓ metadata.json is valid (uuid=$UUID, name=$NAME, versions=$VERSIONS)"
+          [ "$SCHEMA" = "org.gnome.shell.extensions.claude-pulse" ] || { echo "ERROR: settings-schema mismatch"; exit 1; }
+          echo "✓ metadata.json is valid (uuid=$UUID, name=$NAME, versions=$VERSIONS, schema=$SCHEMA)"
+
+  validate-schema:
+    name: Validate GSettings schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile schemas
+        run: |
+          glib-compile-schemas extension/schemas/
+          echo "✓ GSettings schema compiles successfully"
 
   test-hook:
     name: Test hook script
     runs-on: ubuntu-latest
+    env:
+      XDG_DATA_HOME: /tmp/test-data
     steps:
       - uses: actions/checkout@v4
-      - name: Install jq
-        run: sudo apt-get install -y jq
-      - name: Test SubagentStart event
+
+      - name: Test SessionStart
         run: |
-          OUTPUT=$(echo '{"hook_event_name":"SubagentStart","agent_id":"test-001","agent_type":"Explore","session_id":"sess-001","cwd":"/tmp/project"}' | \
-            CLAUDE_PROFILE=test XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh && \
-            cat /tmp/test-data/claude-pulse/events.jsonl)
-          echo "$OUTPUT"
-          echo "$OUTPUT" | jq -e '.event == "SubagentStart"' > /dev/null
-          echo "$OUTPUT" | jq -e '.agent_id == "test-001"' > /dev/null
-          echo "$OUTPUT" | jq -e '.profile == "test"' > /dev/null
-          echo "✓ SubagentStart event is valid"
-      - name: Test SubagentStop event
+          echo '{"hook_event_name":"SessionStart","session_id":"s1","cwd":"/tmp/p","model":"claude-sonnet-4-6"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "SessionStart" and .model == "claude-sonnet-4-6"' > /dev/null
+          echo "✓ SessionStart"
+
+      - name: Test SubagentStart
         run: |
-          echo '{"hook_event_name":"SubagentStop","agent_id":"test-001","agent_type":"Explore","session_id":"sess-001","cwd":"/tmp/project"}' | \
-            CLAUDE_PROFILE=test XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh
-          LAST=$(tail -1 /tmp/test-data/claude-pulse/events.jsonl)
-          echo "$LAST" | jq -e '.event == "SubagentStop"' > /dev/null
-          echo "✓ SubagentStop event is valid"
-      - name: Test SessionStart event
+          echo '{"hook_event_name":"SubagentStart","agent_id":"a1","agent_type":"Explore","session_id":"s1","cwd":"/tmp/p"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "SubagentStart" and .agent_id == "a1"' > /dev/null
+          echo "✓ SubagentStart"
+
+      - name: Test SubagentStop
         run: |
-          echo '{"hook_event_name":"SessionStart","session_id":"sess-001","cwd":"/tmp/project","model":"claude-sonnet-4-6"}' | \
-            CLAUDE_PROFILE=ci XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh
-          LAST=$(tail -1 /tmp/test-data/claude-pulse/events.jsonl)
-          echo "$LAST" | jq -e '.event == "SessionStart"' > /dev/null
-          echo "$LAST" | jq -e '.model == "claude-sonnet-4-6"' > /dev/null
-          echo "✓ SessionStart event is valid"
-      - name: Test SessionEnd event
+          echo '{"hook_event_name":"SubagentStop","agent_id":"a1","agent_type":"Explore","session_id":"s1","cwd":"/tmp/p","last_assistant_message":"Found 3 files"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "SubagentStop" and .summary == "Found 3 files"' > /dev/null
+          echo "✓ SubagentStop (with summary)"
+
+      - name: Test PreToolUse → ToolUse
         run: |
-          echo '{"hook_event_name":"SessionEnd","session_id":"sess-001","cwd":"/tmp/project"}' | \
-            CLAUDE_PROFILE=ci XDG_DATA_HOME=/tmp/test-data bash hooks/claude-pulse-hook.sh
-          LAST=$(tail -1 /tmp/test-data/claude-pulse/events.jsonl)
-          echo "$LAST" | jq -e '.event == "SessionEnd"' > /dev/null
-          echo "✓ SessionEnd event is valid"
+          echo '{"hook_event_name":"PreToolUse","session_id":"s1","cwd":"/tmp/p","tool_name":"Bash","tool_use_id":"tu1"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "ToolUse" and .tool_name == "Bash"' > /dev/null
+          echo "✓ ToolUse"
+
+      - name: Test PostToolUseFailure → ToolError
+        run: |
+          echo '{"hook_event_name":"PostToolUseFailure","session_id":"s1","cwd":"/tmp/p","tool_name":"Bash","tool_use_id":"tu2","error":"Permission denied","is_interrupt":false}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "ToolError" and .error == "Permission denied"' > /dev/null
+          echo "✓ ToolError"
+
+      - name: Test PreCompact → Compact
+        run: |
+          echo '{"hook_event_name":"PreCompact","session_id":"s1","cwd":"/tmp/p","trigger":"context_window_full"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "Compact" and .trigger == "context_window_full"' > /dev/null
+          echo "✓ Compact"
+
+      - name: Test TaskCompleted → TaskDone
+        run: |
+          echo '{"hook_event_name":"TaskCompleted","session_id":"s1","cwd":"/tmp/p","task_id":"t1","task_subject":"Fix bug"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "TaskDone" and .task_subject == "Fix bug"' > /dev/null
+          echo "✓ TaskDone"
+
+      - name: Test WorktreeCreate
+        run: |
+          echo '{"hook_event_name":"WorktreeCreate","session_id":"s1","cwd":"/tmp/p","name":"wt-001"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "WorktreeCreate" and .name == "wt-001"' > /dev/null
+          echo "✓ WorktreeCreate"
+
+      - name: Test WorktreeRemove
+        run: |
+          echo '{"hook_event_name":"WorktreeRemove","session_id":"s1","cwd":"/tmp/p","worktree_path":"/tmp/p/.claude/worktrees/wt-001"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "WorktreeRemove"' > /dev/null
+          echo "✓ WorktreeRemove"
+
+      - name: Test UserPromptSubmit → Prompt
+        run: |
+          echo '{"hook_event_name":"UserPromptSubmit","session_id":"s1","cwd":"/tmp/p","prompt":"fix the bug"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "Prompt"' > /dev/null
+          echo "✓ Prompt (no content stored)"
+
+      - name: Test Notification
+        run: |
+          echo '{"hook_event_name":"Notification","session_id":"s1","cwd":"/tmp/p","message":"Waiting for input","title":"Claude","notification_type":"info"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "Notification" and .message == "Waiting for input"' > /dev/null
+          echo "✓ Notification"
+
+      - name: Test Stop
+        run: |
+          echo '{"hook_event_name":"Stop","session_id":"s1","cwd":"/tmp/p"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "Stop"' > /dev/null
+          echo "✓ Stop"
+
+      - name: Test SessionEnd
+        run: |
+          echo '{"hook_event_name":"SessionEnd","session_id":"s1","cwd":"/tmp/p","reason":"user_exit"}' | \
+            CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.event == "SessionEnd" and .reason == "user_exit"' > /dev/null
+          echo "✓ SessionEnd"
+
+      - name: Test git branch in SessionStart
+        run: |
+          git init /tmp/test-repo
+          git -C /tmp/test-repo checkout -b feat/test
+          git -C /tmp/test-repo config user.email "ci@test" && git -C /tmp/test-repo config user.name "CI"
+          touch /tmp/test-repo/.gitkeep && git -C /tmp/test-repo add . && git -C /tmp/test-repo commit -m "init"
+          echo '{"hook_event_name":"SessionStart","session_id":"s2","cwd":"/tmp/test-repo","model":"claude-sonnet-4-6"}' | \
+            CLAUDE_PROFILE=ci XDG_DATA_HOME=/tmp/test-data bash $GITHUB_WORKSPACE/hooks/claude-pulse-hook.sh
+          tail -1 /tmp/test-data/claude-pulse/events.jsonl | jq -e '.branch == "feat/test"' > /dev/null
+          echo "✓ Git branch captured"
+
+      - name: Test compute-cost script
+        run: |
+          # Create mock transcript with usage data
+          mkdir -p /tmp/test-transcript
+          echo '{"type":"assistant","message":{"model":"claude-sonnet-4-6","usage":{"input_tokens":100,"cache_creation_input_tokens":500,"cache_read_input_tokens":10000,"output_tokens":200}}}' > /tmp/test-transcript/session.jsonl
+          RESULT=$(bash hooks/compute-cost.sh /tmp/test-transcript/session.jsonl "claude-sonnet-4-6")
+          echo "$RESULT" | jq -e '.cost_usd > 0' > /dev/null
+          echo "$RESULT" | jq -e '.tokens > 0' > /dev/null
+          echo "✓ compute-cost.sh works"
+
+      - name: Verify total event count
+        run: |
+          COUNT=$(wc -l < /tmp/test-data/claude-pulse/events.jsonl)
+          [ "$COUNT" -eq 14 ] || { echo "ERROR: expected 14 events, got $COUNT"; exit 1; }
+          echo "✓ All 14 events captured correctly"
+
+  # --- Release job: runs only on version tags ---
+  release:
+    name: Package & Release
+    runs-on: ubuntu-latest
+    needs: [lint-shell, lint-js, validate-metadata, validate-schema, test-hook]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Compile schemas
+        run: glib-compile-schemas extension/schemas/
+
+      - name: Build extension zip
+        run: |
+          cd extension
+          zip -r ../claude-pulse@delfour.co.zip \
+            extension.js \
+            prefs.js \
+            metadata.json \
+            stylesheet.css \
+            icons/ \
+            schemas/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: claude-pulse@delfour.co.zip
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            **From source:**
+            ```bash
+            git clone https://github.com/delfour-co/claude-pulse.git
+            cd claude-pulse
+            bash scripts/install.sh
+            ```
+
+            **From zip:**
+            ```bash
+            gnome-extensions install --force claude-pulse@delfour.co.zip
+            ```
+
+            Then log out and back in (Wayland) or press Alt+F2 → r (X11).

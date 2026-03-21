@@ -70,11 +70,15 @@ install_hooks_for_dir() {
     local hook_cmd="CLAUDE_PROFILE=$profile_name $HOOK_DEST"
 
     local hook_config
-    hook_config=$(jq -nc --arg cmd "$hook_cmd" '{
-        "SubagentStart": [{"hooks": [{"type": "command", "command": $cmd}]}],
-        "SubagentStop": [{"hooks": [{"type": "command", "command": $cmd}]}],
-        "SessionStart": [{"hooks": [{"type": "command", "command": $cmd}]}],
-        "SessionEnd": [{"hooks": [{"type": "command", "command": $cmd}]}]
+    local hook_entry='[{"hooks": [{"type": "command", "command": "CMD"}]}]'
+    hook_entry="${hook_entry//CMD/$hook_cmd}"
+    hook_config=$(jq -nc --arg h "$hook_entry" '($h | fromjson) as $e | {
+        SubagentStart: $e, SubagentStop: $e,
+        SessionStart: $e, SessionEnd: $e,
+        PreToolUse: $e, PostToolUseFailure: $e,
+        PreCompact: $e, TaskCompleted: $e,
+        WorktreeCreate: $e, WorktreeRemove: $e,
+        UserPromptSubmit: $e, Notification: $e, Stop: $e
     }')
 
     mkdir -p "$config_dir"

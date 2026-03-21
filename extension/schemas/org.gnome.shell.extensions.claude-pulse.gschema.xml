@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.claude-pulse"
+          path="/org/gnome/shell/extensions/claude-pulse/">
+
+    <key name="notify-agent-stop" type="b">
+      <default>true</default>
+      <summary>Notify when agent finishes</summary>
+      <description>Desktop notification when a subagent completes.</description>
+    </key>
+
+    <key name="notify-agent-start" type="b">
+      <default>false</default>
+      <summary>Notify when agent starts</summary>
+      <description>Desktop notification when a subagent spawns.</description>
+    </key>
+
+    <key name="notify-compact" type="b">
+      <default>true</default>
+      <summary>Notify on context compaction</summary>
+      <description>Desktop notification when Claude Code compacts its context window.</description>
+    </key>
+
+    <key name="notify-tool-error" type="b">
+      <default>false</default>
+      <summary>Notify on tool error</summary>
+      <description>Desktop notification when a tool call fails.</description>
+    </key>
+
+    <key name="notify-task-done" type="b">
+      <default>false</default>
+      <summary>Notify on task completion</summary>
+      <description>Desktop notification when a task is completed.</description>
+    </key>
+
+    <key name="notify-claude" type="b">
+      <default>false</default>
+      <summary>Relay Claude Code notifications</summary>
+      <description>Forward Claude Code's own notifications (e.g. "waiting for input") as desktop notifications.</description>
+    </key>
+
+    <key name="stale-agent-timeout" type="i">
+      <default>1800</default>
+      <summary>Stale agent timeout (seconds)</summary>
+      <description>Remove agents running longer than this. 0 = disabled.</description>
+    </key>
+
+    <key name="max-events-file-size" type="i">
+      <default>102400</default>
+      <summary>Maximum events file size (bytes)</summary>
+      <description>Truncate the events file when idle and exceeding this size. 0 = disabled.</description>
+    </key>
+
+    <key name="session-history-size" type="i">
+      <default>10</default>
+      <summary>Session history size</summary>
+      <description>Number of recently completed sessions to keep.</description>
+    </key>
+
+    <key name="theme" type="s">
+      <default>'default'</default>
+      <summary>Visual theme</summary>
+      <description>Visual theme for the activity graph and menu. One of: default, compact, cyberpunk, tron.</description>
+    </key>
+
+    <key name="auto-dnd" type="b">
+      <default>false</default>
+      <summary>Auto Do Not Disturb</summary>
+      <description>Enable GNOME Do Not Disturb when agents are active, restore when all finish.</description>
+    </key>
+
+    <key name="sound-on-finish" type="b">
+      <default>false</default>
+      <summary>Play sound when agent finishes</summary>
+      <description>Play a system sound when an agent completes its work.</description>
+    </key>
+
+    <key name="toggle-menu" type="as">
+      <default><![CDATA[['<Super>p']]]></default>
+      <summary>Toggle menu shortcut</summary>
+      <description>Keyboard shortcut to toggle the Claude Pulse dropdown menu.</description>
+    </key>
+
+    <key name="panel-position" type="s">
+      <default>'right'</default>
+      <summary>Panel position</summary>
+      <description>Position in the top panel: left, center, right.</description>
+    </key>
+
+  </schema>
+</schemalist>
