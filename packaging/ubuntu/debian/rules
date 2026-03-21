@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+UUID = claude-pulse@delfour.co
+EXT_DIR = /usr/share/gnome-shell/extensions/$(UUID)
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	glib-compile-schemas extension/schemas/
+
+override_dh_auto_install:
+	install -d $(CURDIR)/debian/gnome-shell-extension-claude-pulse$(EXT_DIR)
+	cp -r extension/* $(CURDIR)/debian/gnome-shell-extension-claude-pulse$(EXT_DIR)/
+	install -Dm755 hooks/claude-pulse-hook.sh $(CURDIR)/debian/gnome-shell-extension-claude-pulse/usr/bin/claude-pulse-hook.sh
+	install -Dm755 hooks/compute-cost.sh $(CURDIR)/debian/gnome-shell-extension-claude-pulse/usr/bin/claude-pulse-compute-cost.sh

@@ -27,13 +27,35 @@ Claude Pulse hooks into [Claude Code](https://code.claude.com/)'s lifecycle even
 
 ## Install
 
+### From source (all distros)
+
 ```bash
 git clone https://github.com/delfour-co/claude-pulse.git
 cd claude-pulse
 bash scripts/install.sh
 ```
 
-On Wayland, log out and back in for the extension to load.
+### Fedora (COPR)
+
+```bash
+sudo dnf copr enable delfour-co/claude-pulse
+sudo dnf install gnome-shell-extension-claude-pulse
+```
+
+### Arch Linux (AUR)
+
+```bash
+yay -S gnome-shell-extension-claude-pulse
+```
+
+### Ubuntu/Debian (PPA)
+
+```bash
+sudo add-apt-repository ppa:delfour-co/claude-pulse
+sudo apt install gnome-shell-extension-claude-pulse
+```
+
+On Wayland, log out and back in for the extension to load. Then configure hooks: `bash /usr/bin/claude-pulse-hook.sh` (packaged installs) or `bash scripts/install.sh` (source install).
 
 ## How It Works
 
