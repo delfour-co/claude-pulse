@@ -200,7 +200,12 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
       - name: Install build deps
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev jq dpkg-dev debhelper
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev jq dpkg-dev debhelper lftp
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d | gpg --batch --import
+          echo "✓ GPG key imported"
 
       - name: Compile schemas
         run: glib-compile-schemas extension/schemas/
@@ -294,3 +299,84 @@ jobs:
 
             Then log out and back in (Wayland) or press Alt+F2 → r (X11).
             Run `bash scripts/install.sh` to configure Claude Code hooks.
+
+      # --- Upload to Ubuntu PPA ---
+      - name: Build and upload PPA source package
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          PKG=gnome-shell-extension-claude-pulse
+
+          # Prepare source tree
+          mkdir -p ppa-build
+          git archive --format=tar.gz --prefix=${PKG}-${VERSION}/ HEAD \
+            -o ppa-build/${PKG}_${VERSION}.orig.tar.gz
+          cd ppa-build
+          tar xzf ${PKG}_${VERSION}.orig.tar.gz
+          cp -r ${PKG}-${VERSION}/packaging/ubuntu/debian ${PKG}-${VERSION}/
+
+          # Update changelog with version and distribution
+          cat > ${PKG}-${VERSION}/debian/changelog << CHLOG
+          ${PKG} (${VERSION}-1~ppa1) noble; urgency=medium
+
+            * Release ${VERSION}
+
+           -- Kevin Delfour <contact@delfour.co>  $(date -R)
+          CHLOG
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' ${PKG}-${VERSION}/debian/changelog
+
+          # Build source package
+          cd ${PKG}-${VERSION}
+          dpkg-source -b .
+          cd ..
+
+          # Sign .dsc
+          gpg --batch --local-user ${{ secrets.GPG_KEY_ID }} --clearsign ${PKG}_${VERSION}-1~ppa1.dsc
+          mv ${PKG}_${VERSION}-1~ppa1.dsc.asc ${PKG}_${VERSION}-1~ppa1.dsc
+
+          # Create .changes
+          cat > ${PKG}_${VERSION}-1~ppa1_source.changes.unsigned << CHANGES
+          Format: 1.8
+          Date: $(date -R)
+          Source: ${PKG}
+          Binary: ${PKG}
+          Architecture: source
+          Version: ${VERSION}-1~ppa1
+          Distribution: noble
+          Urgency: medium
+          Maintainer: Kevin Delfour <contact@delfour.co>
+          Changed-By: Kevin Delfour <contact@delfour.co>
+          Description:
+           ${PKG} - Real-time Claude Code agent monitoring for GNOME Shell
+          Changes:
+           ${PKG} (${VERSION}-1~ppa1) noble; urgency=medium
+           .
+             * Release ${VERSION}
+          Checksums-Sha1:
+           $(sha1sum ${PKG}_${VERSION}.orig.tar.gz | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}.orig.tar.gz) ${PKG}_${VERSION}.orig.tar.gz
+           $(sha1sum ${PKG}_${VERSION}-1~ppa1.diff.gz | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}-1~ppa1.diff.gz) ${PKG}_${VERSION}-1~ppa1.diff.gz
+           $(sha1sum ${PKG}_${VERSION}-1~ppa1.dsc | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}-1~ppa1.dsc) ${PKG}_${VERSION}-1~ppa1.dsc
+          Checksums-Sha256:
+           $(sha256sum ${PKG}_${VERSION}.orig.tar.gz | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}.orig.tar.gz) ${PKG}_${VERSION}.orig.tar.gz
+           $(sha256sum ${PKG}_${VERSION}-1~ppa1.diff.gz | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}-1~ppa1.diff.gz) ${PKG}_${VERSION}-1~ppa1.diff.gz
+           $(sha256sum ${PKG}_${VERSION}-1~ppa1.dsc | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}-1~ppa1.dsc) ${PKG}_${VERSION}-1~ppa1.dsc
+          Files:
+           $(md5sum ${PKG}_${VERSION}.orig.tar.gz | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}.orig.tar.gz) devel optional ${PKG}_${VERSION}.orig.tar.gz
+           $(md5sum ${PKG}_${VERSION}-1~ppa1.diff.gz | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}-1~ppa1.diff.gz) devel optional ${PKG}_${VERSION}-1~ppa1.diff.gz
+           $(md5sum ${PKG}_${VERSION}-1~ppa1.dsc | awk '{print $1}') $(stat -c%s ${PKG}_${VERSION}-1~ppa1.dsc) devel optional ${PKG}_${VERSION}-1~ppa1.dsc
+          CHANGES
+          sed -i 's/^          //' ${PKG}_${VERSION}-1~ppa1_source.changes.unsigned
+
+          # Sign .changes
+          gpg --batch --local-user ${{ secrets.GPG_KEY_ID }} --clearsign ${PKG}_${VERSION}-1~ppa1_source.changes.unsigned
+          mv ${PKG}_${VERSION}-1~ppa1_source.changes.unsigned.asc ${PKG}_${VERSION}-1~ppa1_source.changes
+
+          # Upload via lftp (single session)
+          lftp -c "
+          open ftp://anonymous:@ppa.launchpad.net/~delfour-co/claude-pulse/ubuntu
+          put ${PKG}_${VERSION}.orig.tar.gz
+          put ${PKG}_${VERSION}-1~ppa1.diff.gz
+          put ${PKG}_${VERSION}-1~ppa1.dsc
+          put ${PKG}_${VERSION}-1~ppa1_source.changes
+          "
+          echo "✓ PPA upload complete"
