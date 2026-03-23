@@ -380,3 +380,56 @@ jobs:
           put ${PKG}_${VERSION}-1~ppa1_source.changes
           "
           echo "✓ PPA upload complete"
+
+      # --- Update AUR ---
+      - name: Update AUR package
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          PKG=gnome-shell-extension-claude-pulse
+
+          # Setup SSH for AUR
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          echo -e "Host aur.archlinux.org\n  IdentityFile ~/.ssh/aur\n  User aur\n  StrictHostKeyChecking no" > ~/.ssh/config
+
+          # Clone AUR repo
+          git clone ssh://aur@aur.archlinux.org/${PKG}.git aur-pkg
+          cd aur-pkg
+
+          # Update PKGBUILD
+          cp ../PKGBUILD .
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+
+          # Generate .SRCINFO
+          TARBALL_URL="https://github.com/delfour-co/claude-pulse/archive/v${VERSION}/claude-pulse-${VERSION}.tar.gz"
+          SHA=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+          sed -i "s/sha256sums=('SKIP')/sha256sums=('${SHA}')/" PKGBUILD
+
+          cat > .SRCINFO << SRCEOF
+          pkgbase = ${PKG}
+          	pkgdesc = Real-time Claude Code agent monitoring for GNOME Shell
+          	pkgver = ${VERSION}
+          	pkgrel = 1
+          	url = https://github.com/delfour-co/claude-pulse
+          	arch = any
+          	license = MIT
+          	makedepends = glib2
+          	depends = gnome-shell>=45
+          	depends = jq
+          	source = ${PKG}-${VERSION}.tar.gz::${TARBALL_URL}
+          	sha256sums = ${SHA}
+
+          pkgname = ${PKG}
+          SRCEOF
+          sed -i 's/^          //' .SRCINFO
+
+          # Commit and push
+          git config user.email "contact@delfour.co"
+          git config user.name "Claude Pulse CI"
+          git add PKGBUILD .SRCINFO
+          git diff --cached --quiet || {
+            git commit -m "Update to v${VERSION}"
+            git push
+            echo "✓ AUR updated to v${VERSION}"
+          }
