@@ -30,7 +30,7 @@ Claude Pulse hooks into [Claude Code](https://code.claude.com/)'s lifecycle even
 ### From source (all distros)
 
 ```bash
-git clone https://github.com/delfour-co/claude-pulse.git
+git clone https://github.com/kdelfour/claude-pulse.git
 cd claude-pulse
 bash scripts/install.sh
 ```
@@ -38,7 +38,7 @@ bash scripts/install.sh
 ### Fedora (COPR)
 
 ```bash
-sudo dnf copr enable delfour-co/claude-pulse
+sudo dnf copr enable kdelfour/claude-pulse
 sudo dnf install gnome-shell-extension-claude-pulse
 ```
 
@@ -51,7 +51,7 @@ yay -S gnome-shell-extension-claude-pulse
 ### Ubuntu/Debian (PPA)
 
 ```bash
-sudo add-apt-repository ppa:delfour-co/claude-pulse
+sudo add-apt-repository ppa:kdelfour/claude-pulse
 sudo apt install gnome-shell-extension-claude-pulse
 ```
 
@@ -87,7 +87,7 @@ Switch themes instantly in the preferences dialog (cog icon in the dropdown foot
 
 ## Documentation
 
-[Wiki](https://github.com/delfour-co/claude-pulse/wiki): [Installation](https://github.com/delfour-co/claude-pulse/wiki/Installation) · [Configuration](https://github.com/delfour-co/claude-pulse/wiki/Configuration) · [Metrics](https://github.com/delfour-co/claude-pulse/wiki/Metrics) · [Activity Graph](https://github.com/delfour-co/claude-pulse/wiki/Activity-Graph) · [Troubleshooting](https://github.com/delfour-co/claude-pulse/wiki/Troubleshooting)
+[Wiki](https://github.com/kdelfour/claude-pulse/wiki): [Installation](https://github.com/kdelfour/claude-pulse/wiki/Installation) · [Configuration](https://github.com/kdelfour/claude-pulse/wiki/Configuration) · [Metrics](https://github.com/kdelfour/claude-pulse/wiki/Metrics) · [Activity Graph](https://github.com/kdelfour/claude-pulse/wiki/Activity-Graph) · [Troubleshooting](https://github.com/kdelfour/claude-pulse/wiki/Troubleshooting)
 
 ## Testing
 
@@ -104,7 +104,7 @@ bash scripts/uninstall.sh --purge # remove everything
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Community contributions welcome for [KDE](https://github.com/delfour-co/claude-pulse/issues/11), [Waybar](https://github.com/delfour-co/claude-pulse/issues/12), and [Quickshell](https://github.com/delfour-co/claude-pulse/issues/13) frontends.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Community contributions welcome for [KDE](https://github.com/kdelfour/claude-pulse/issues/11), [Waybar](https://github.com/kdelfour/claude-pulse/issues/12), and [Quickshell](https://github.com/kdelfour/claude-pulse/issues/13) frontends.
 
 ## License
 
