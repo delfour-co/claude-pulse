@@ -49,6 +49,29 @@ case "$EVENT_NAME" in
       timestamp:$ts, profile:$p,
       tool_name:$i.tool_name, tool_use_id:$i.tool_use_id
     }' >> "$MONITOR_FILE" ;;
+  PostToolUse)
+    # Live-cost opt-in: emit an incremental Cost event after each tool use.
+    # The Stop hook remains authoritative and overrides with final:true.
+    if [ "${CLAUDE_PULSE_LIVE_COST:-0}" = "1" ]; then
+      TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty')
+      MODEL=$(echo "$INPUT" | jq -r '.model // empty')
+      SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
+      if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ -n "$SESSION_ID" ]; then
+        HOOK_DIR="$(dirname "$(readlink -f "$0")")"
+        COST_SCRIPT="$HOOK_DIR/compute-cost.sh"
+        if [ -f "$COST_SCRIPT" ]; then
+          STATE_FILE="$(dirname "$TRANSCRIPT_PATH")/cost-state-$SESSION_ID.json"
+          COST_DATA=$(bash "$COST_SCRIPT" "$TRANSCRIPT_PATH" "$MODEL" "$STATE_FILE" 2>/dev/null || echo '{}')
+          jq -nc --argjson c "$COST_DATA" --argjson i "$INPUT" --arg ts "$TIMESTAMP" --arg p "$PROFILE" '{
+            event:"Cost", session_id:$i.session_id, cwd:$i.cwd, timestamp:$ts, profile:$p,
+            cost_usd:$c.cost_usd, tokens:$c.tokens,
+            input:$c.input, output:$c.output,
+            cache_read:$c.cache_read, cache_create:$c.cache_create,
+            final:false
+          }' >> "$MONITOR_FILE"
+        fi
+      fi
+    fi ;;
   PostToolUseFailure)
     jq -nc --argjson i "$INPUT" --arg ts "$TIMESTAMP" --arg p "$PROFILE" '{
       event:"ToolError", session_id:$i.session_id, cwd:$i.cwd,
@@ -122,7 +145,8 @@ case "$EVENT_NAME" in
           event:"Cost", session_id:$sid, cwd:$cwd, timestamp:$ts, profile:$p,
           cost_usd:$c.cost_usd, tokens:$c.tokens,
           input:$c.input, output:$c.output,
-          cache_read:$c.cache_read, cache_create:$c.cache_create
+          cache_read:$c.cache_read, cache_create:$c.cache_create,
+          final:true
         }' >> "$MONITOR_FILE"
       fi
     fi ;;

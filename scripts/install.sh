@@ -75,7 +75,7 @@ install_hooks_for_dir() {
     hook_config=$(jq -nc --arg h "$hook_entry" '($h | fromjson) as $e | {
         SubagentStart: $e, SubagentStop: $e,
         SessionStart: $e, SessionEnd: $e,
-        PreToolUse: $e, PostToolUseFailure: $e,
+        PreToolUse: $e, PostToolUse: $e, PostToolUseFailure: $e,
         PreCompact: $e, TaskCompleted: $e,
         WorktreeCreate: $e, WorktreeRemove: $e,
         UserPromptSubmit: $e, Notification: $e, Stop: $e
