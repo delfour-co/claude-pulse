@@ -954,6 +954,7 @@ const ClaudePulseButton = GObject.registerClass({
                 tools: {}, toolTotal: 0, errors: 0, compactions: 0,
                 tasks: [], prompts: 0, agentsSpawned: 0,
                 costUsd: 0, tokens: 0, contextTokens: 0,
+                costFinal: true,
             });
         return this._sessionMetrics.get(sessionId);
     }
@@ -1032,6 +1033,8 @@ const ClaudePulseButton = GObject.registerClass({
                     const mx = this._getOrCreateMetrics(sid);
                     mx.costUsd = ev.cost_usd || 0;
                     mx.tokens = ev.tokens || 0;
+                    // Legacy events lack `final`; treat missing as authoritative.
+                    mx.costFinal = ev.final !== false;
                 }
                 break;
 
@@ -1143,6 +1146,7 @@ const ClaudePulseButton = GObject.registerClass({
 
         // --- Metrics text under graph ---
         let totalTools = 0, totalErrors = 0, totalCompactions = 0, totalTasks = 0, totalCost = 0;
+        let anyCostLive = false;
         const toolCounts = {};
         for (const [_sid, m] of this._sessionMetrics) {
             totalTools += m.toolTotal;
@@ -1150,6 +1154,7 @@ const ClaudePulseButton = GObject.registerClass({
             totalCompactions += m.compactions;
             totalTasks += m.tasks.length;
             totalCost += m.costUsd;
+            if (m.costUsd > 0 && !m.costFinal) anyCostLive = true;
             for (const [tool, count] of Object.entries(m.tools))
                 toolCounts[tool] = (toolCounts[tool] || 0) + count;
         }
@@ -1195,7 +1200,7 @@ const ClaudePulseButton = GObject.registerClass({
             if (totalCost > 0) {
                 const costPair = new St.BoxLayout({style: 'spacing: 3px;'});
                 costPair.add_child(new St.Label({
-                    text: '$',
+                    text: anyCostLive ? '~$' : '$',
                     style: `font-size: 10px; color: ${labelColor};`,
                     y_align: Clutter.ActorAlign.CENTER,
                 }));
@@ -1319,7 +1324,7 @@ const ClaudePulseButton = GObject.registerClass({
                 const m = this._sessionMetrics.get(sid);
                 if (m && (m.toolTotal > 0 || m.errors > 0 || m.prompts > 0 || m.costUsd > 0)) {
                     const p = [];
-                    if (m.costUsd > 0) p.push(`$${m.costUsd.toFixed(2)}`);
+                    if (m.costUsd > 0) p.push(`${m.costFinal ? '' : '~'}$${m.costUsd.toFixed(2)}`);
                     if (m.toolTotal > 0) p.push(`${m.toolTotal} tool${m.toolTotal > 1 ? 's' : ''}`);
                     if (m.errors > 0) p.push(`${m.errors} err`);
                     if (m.compactions > 0) p.push(`${m.compactions} compact`);
