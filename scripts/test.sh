@@ -77,10 +77,10 @@ echo '{"event":"Prompt","session_id":"'"$SID_PRO"'","cwd":"/home/user/work-proje
 echo '{"event":"Prompt","session_id":"'"$SID_PERSO"'","cwd":"/home/user/side-project","timestamp":"'"$(TS)"'","profile":"perso"}' >> "$MONITOR_FILE"
 sleep 0.5
 
-# Cost events
-echo "[12/20] Cost events..."
-echo '{"event":"Cost","session_id":"'"$SID_PRO"'","cwd":"/home/user/work-project","timestamp":"'"$(TS)"'","profile":"pro","cost_usd":0.42,"tokens":28000,"input":500,"output":12000,"cache_read":15000,"cache_create":500}' >> "$MONITOR_FILE"
-echo '{"event":"Cost","session_id":"'"$SID_PERSO"'","cwd":"/home/user/side-project","timestamp":"'"$(TS)"'","profile":"perso","cost_usd":1.87,"tokens":95000,"input":1000,"output":35000,"cache_read":55000,"cache_create":4000}' >> "$MONITOR_FILE"
+# Cost events (live — preview-only; final authoritative ones arrive with Stop)
+echo "[12/20] Live cost events (final:false → panel prefixes with ~)..."
+echo '{"event":"Cost","session_id":"'"$SID_PRO"'","cwd":"/home/user/work-project","timestamp":"'"$(TS)"'","profile":"pro","cost_usd":0.42,"tokens":28000,"input":500,"output":12000,"cache_read":15000,"cache_create":500,"final":false}' >> "$MONITOR_FILE"
+echo '{"event":"Cost","session_id":"'"$SID_PERSO"'","cwd":"/home/user/side-project","timestamp":"'"$(TS)"'","profile":"perso","cost_usd":1.87,"tokens":95000,"input":1000,"output":35000,"cache_read":55000,"cache_create":4000,"final":false}' >> "$MONITOR_FILE"
 sleep 1
 
 # Stop agents
@@ -108,10 +108,10 @@ echo "[18/20] Claude stop (perso)..."
 echo '{"event":"Stop","session_id":"'"$SID_PERSO"'","cwd":"/home/user/side-project","timestamp":"'"$(TS)"'","profile":"perso"}' >> "$MONITOR_FILE"
 sleep 0.3
 
-# Updated cost after more work
-echo "[19/20] Updated cost events..."
-echo '{"event":"Cost","session_id":"'"$SID_PRO"'","cwd":"/home/user/work-project","timestamp":"'"$(TS)"'","profile":"pro","cost_usd":0.58,"tokens":38000,"input":700,"output":16000,"cache_read":20000,"cache_create":1300}' >> "$MONITOR_FILE"
-echo '{"event":"Cost","session_id":"'"$SID_PERSO"'","cwd":"/home/user/side-project","timestamp":"'"$(TS)"'","profile":"perso","cost_usd":2.34,"tokens":120000,"input":1200,"output":45000,"cache_read":68000,"cache_create":5800}' >> "$MONITOR_FILE"
+# Updated cost — authoritative Stop-time values (final:true → no ~ prefix)
+echo "[19/20] Final cost events (final:true → panel drops the ~)..."
+echo '{"event":"Cost","session_id":"'"$SID_PRO"'","cwd":"/home/user/work-project","timestamp":"'"$(TS)"'","profile":"pro","cost_usd":0.58,"tokens":38000,"input":700,"output":16000,"cache_read":20000,"cache_create":1300,"final":true}' >> "$MONITOR_FILE"
+echo '{"event":"Cost","session_id":"'"$SID_PERSO"'","cwd":"/home/user/side-project","timestamp":"'"$(TS)"'","profile":"perso","cost_usd":2.34,"tokens":120000,"input":1200,"output":45000,"cache_read":68000,"cache_create":5800,"final":true}' >> "$MONITOR_FILE"
 sleep 0.5
 
 # End sessions
