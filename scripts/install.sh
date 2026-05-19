@@ -31,8 +31,13 @@ echo "  ✓ GNOME Shell $GNOME_VERSION found"
 # 2. Install extension
 echo ""
 echo "[2/5] Installing GNOME Shell extension..."
+if ! command -v glib-compile-schemas &>/dev/null; then
+    echo "  ERROR: glib-compile-schemas is required (package: libglib2.0-bin on Debian/Ubuntu, glib2 on Fedora/Arch)."
+    exit 1
+fi
 mkdir -p "$EXT_DEST"
 cp -r "$EXT_SRC"/* "$EXT_DEST/"
+glib-compile-schemas "$EXT_DEST/schemas/"
 echo "  ✓ Extension installed: $EXT_DEST"
 
 # 3. Install hook script
