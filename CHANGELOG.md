@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.0] - 2026-05-19
+
+### Features
+
+- **Live cost tracking** — Opt-in `CLAUDE_PULSE_LIVE_COST=1` emits a live Cost estimate on every PostToolUse, with the panel prefixing non-final session costs with `~` (#42)
+- **Incremental cost computation** — `compute-cost` now keeps a persisted offset + running totals instead of re-parsing the whole transcript each time
+
+### Packaging
+
+- **Ubuntu PPA** — Release tags auto-upload source packages to the Launchpad PPA
+- **Arch AUR** — Release tags auto-update the AUR PKGBUILD
+- **Fedora COPR** — Fixed package path (`kdelfour/claude-pulse`)
+
+### Fixes
+
+- **`scripts/install.sh`** — Compile the GSettings schema after copying the extension; opening preferences no longer fails with `gschemas.compiled` not found
+
+### Project
+
+- Open source governance: `SECURITY.md`, `CODEOWNERS`, `FUNDING.yml`, branch protection
+
 ## [1.0.0] - 2026-03-16
 
 ### Features
