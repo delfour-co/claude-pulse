@@ -48,12 +48,15 @@ sudo dnf install gnome-shell-extension-claude-pulse
 yay -S gnome-shell-extension-claude-pulse
 ```
 
-### Ubuntu/Debian (PPA)
+### Ubuntu/Debian (.deb)
+
+Download the latest `.deb` from the [GitHub Releases](https://github.com/delfour-co/claude-pulse/releases/latest) page, then:
 
 ```bash
-sudo add-apt-repository ppa:kdelfour/claude-pulse
-sudo apt install gnome-shell-extension-claude-pulse
+sudo apt install ./gnome-shell-extension-claude-pulse_*.deb
 ```
+
+> A Launchpad PPA is planned but not yet available — use the `.deb` for now.
 
 On Wayland, log out and back in for the extension to load. Then configure hooks: `bash /usr/bin/claude-pulse-hook.sh` (packaged installs) or `bash scripts/install.sh` (source install).
 
