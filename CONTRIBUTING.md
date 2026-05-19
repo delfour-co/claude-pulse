@@ -177,7 +177,7 @@ Releases are automated. Maintainer workflow:
    - Runs all tests
    - Builds zip, deb, tarball, spec, PKGBUILD
    - Creates GitHub Release with all artifacts
-   - Uploads signed source package to Ubuntu PPA (WIP — not yet functional, users install from the `.deb` attached to the release)
+   - Uploads signed source package to the Ubuntu PPA (`ppa:delfour-co/claude-pulse`)
    - Triggers Fedora COPR rebuild
    - Updates Arch AUR
 
