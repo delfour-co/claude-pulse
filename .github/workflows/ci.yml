@@ -12,7 +12,7 @@ jobs:
     name: ShellCheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
@@ -22,8 +22,8 @@ jobs:
     name: JavaScript syntax
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
       - name: Check JS syntax
@@ -35,7 +35,7 @@ jobs:
     name: Validate metadata.json
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate metadata
         run: |
           jq . extension/metadata.json > /dev/null
@@ -53,7 +53,7 @@ jobs:
     name: Validate GSettings schema
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Compile schemas
         run: |
           glib-compile-schemas extension/schemas/
@@ -65,7 +65,7 @@ jobs:
     env:
       XDG_DATA_HOME: /tmp/test-data
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Test SessionStart
         run: |
@@ -251,7 +251,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Extract version
         id: version
@@ -316,7 +316,7 @@ jobs:
 
       # --- Release with all artifacts ---
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             claude-pulse@delfour.co.zip
