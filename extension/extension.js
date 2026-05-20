@@ -611,6 +611,7 @@ const ClaudePulseButton = GObject.registerClass({
         this._sampleTimerId = null;
         this._staleTimerId = null;
         this._history = [];
+        this._isInitialReplay = true;
 
         // Panel layout: icon + label
         this._box = new St.BoxLayout({style_class: 'panel-status-indicators-box'});
@@ -725,15 +726,6 @@ const ClaudePulseButton = GObject.registerClass({
 
         this._setupFileMonitor();
 
-        // Purge events file on startup to avoid stale sessions/agents
-        try {
-            if (this._monitorFile && this._monitorFile.query_exists(null)) {
-                const stream = this._monitorFile.replace(null, false, Gio.FileCreateFlags.NONE, null);
-                stream.close(null);
-            }
-        } catch (_e) {
-            // Ignore
-        }
         this._lastLineCount = 0;
 
         // Periodic reload every 5s as fallback (FileMonitor can miss events)
@@ -770,6 +762,10 @@ const ClaudePulseButton = GObject.registerClass({
                 this._graph.queue_repaint();
             }
         });
+
+        // Replay any persisted events.jsonl content immediately so the panel
+        // doesn't sit empty until the 5s reload timer fires.
+        this._reloadFile();
     }
 
     _getSetting(type, key, fallback) {
@@ -876,10 +872,15 @@ const ClaudePulseButton = GObject.registerClass({
                 this._activeSessions.set(sid, sess);
             }
         }
-        // Remove sessions from JSONL that are no longer alive
+        // Remove sessions from JSONL that are no longer alive, and drop their
+        // accumulated metrics so the totals row stays consistent with the
+        // SESSIONS list rendered just below.
         for (const sid of jsonlSessionIds) {
-            if (!liveSessions.has(sid))
+            if (!liveSessions.has(sid)) {
                 this._activeSessions.delete(sid);
+                this._sessionMetrics.delete(sid);
+                this._sessionStarts.delete(sid);
+            }
         }
     }
 
@@ -1111,7 +1112,7 @@ const ClaudePulseButton = GObject.registerClass({
                 try {
                     const ev = JSON.parse(lines[i]);
                     // Only send notifications for lines added since last read
-                    const isNew = i >= prevLineCount;
+                    const isNew = !this._isInitialReplay && (i >= prevLineCount);
                     this._processEvent(ev, isNew);
                 } catch (_e) {
                     // Skip malformed lines
@@ -1120,6 +1121,7 @@ const ClaudePulseButton = GObject.registerClass({
 
             // Cross-check with live Claude Code sessions
             this._scanLiveSessions();
+            this._isInitialReplay = false;
 
             this._updateMenu();
         } catch (e) {
