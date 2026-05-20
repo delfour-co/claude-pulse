@@ -72,8 +72,8 @@ In the constructor where `this._icon` is built (around `extension.js:618`):
 
 ### Activity-driven recolor
 
-In `_update()` (around `extension.js:1132`) where `isActive` is already
-computed:
+In `_updateMenu()` (around `extension.js:1148`) where `isActive` is
+already computed:
 
 - If `icon-style === "claudecode"`:
   - `isActive === true` → `this._icon.style = "color: #D97757;"`
