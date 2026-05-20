@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.0] - 2026-05-20
+
+### Features
+
+- **Optional Claude Code panel icon** — A new **Preferences → Appearance → Panel icon** dropdown swaps the default "Pulse" panel icon for the Claude Code logo, which turns Anthropic orange (`#D97757`) while at least one agent or session is active and neutral gray (`#7d7d7d`) when idle. Existing installs keep the Pulse icon by default.
+
+### Credits
+
+- Claude Code icon variant sourced from [lobehub/lobe-icons](https://github.com/lobehub/lobe-icons) (MIT, © 2023 LobeHub). "Claude" is a trademark of Anthropic, PBC.
+
 ## [1.2.0] - 2026-05-20
 
 ### Changes

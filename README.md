@@ -114,6 +114,15 @@ Implementation notes:
 
 Switch themes instantly in the preferences dialog (cog icon in the dropdown footer).
 
+### Panel icon
+
+The systray icon defaults to the project's custom **Pulse** mark
+(neutral, theme-independent). From **Preferences → Appearance → Panel icon**,
+you can switch to the **Claude Code logo**, which turns Anthropic orange
+(`#D97757`) when an agent or session is active and neutral gray
+(`#7d7d7d`) otherwise. The toggle applies live; no GNOME Shell restart
+is needed.
+
 ## Documentation
 
 [Wiki](https://github.com/kdelfour/claude-pulse/wiki): [Installation](https://github.com/kdelfour/claude-pulse/wiki/Installation) · [Configuration](https://github.com/kdelfour/claude-pulse/wiki/Configuration) · [Metrics](https://github.com/kdelfour/claude-pulse/wiki/Metrics) · [Activity Graph](https://github.com/kdelfour/claude-pulse/wiki/Activity-Graph) · [Troubleshooting](https://github.com/kdelfour/claude-pulse/wiki/Troubleshooting)
@@ -138,3 +147,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Community contributions welcome for [KDE
 ## License
 
 [MIT](LICENSE) — Delfour.co
+
+The optional Claude Code panel icon is sourced from
+[lobehub/lobe-icons](https://github.com/lobehub/lobe-icons)
+(MIT, © 2023 LobeHub). See
+[`extension/icons/LOBE_ICONS_LICENSE`](extension/icons/LOBE_ICONS_LICENSE)
+for the full license text. "Claude" is a trademark of Anthropic, PBC;
+Claude Pulse is an independent, unaffiliated project.

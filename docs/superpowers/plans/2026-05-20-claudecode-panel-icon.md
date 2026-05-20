@@ -4,7 +4,7 @@
 
 **Goal:** Add an optional Claude Code logo as the GNOME Shell panel systray icon, recolored neutral gray when idle and Anthropic orange when an agent or session is active. The legacy "pulse" icon remains the default.
 
-**Architecture:** New GSettings key `icon-style` (`pulse` default, `claudecode`). The constructor chooses the SVG path from the setting. `_update()` applies `style="color: #...;"` on the `St.Icon` only when the claudecode variant is selected. A `changed::icon-style` listener swaps the icon and re-applies color at runtime. No hook or CI changes.
+**Architecture:** New GSettings key `icon-style` (`pulse` default, `claudecode`). The constructor chooses the SVG path from the setting. The periodic `_updateMenu()` method applies `style="color: #...;"` on the `St.Icon` only when the claudecode variant is selected. A `changed::icon-style` listener swaps the icon and re-applies color at runtime. No hook or CI changes.
 
 **Tech Stack:** GJS / GNOME Shell 45–49 extension (St, Clutter, Gio.Settings), Adwaita (`Adw.ComboRow`) for prefs. No build step.
 
@@ -20,7 +20,7 @@
 
 **Modify:**
 - `extension/schemas/org.gnome.shell.extensions.claude-pulse.gschema.xml` — add `icon-style` string key.
-- `extension/extension.js` — read setting in `_init`, choose SVG, color flip in `_update()`, connect/disconnect change listener.
+- `extension/extension.js` — read setting in `_init`, choose SVG, color flip in `_updateMenu()`, connect/disconnect change listener.
 - `extension/prefs.js` — Adw.ComboRow in the Appearance group.
 - `README.md` — short subsection + credits line.
 - `CHANGELOG.md` — new `[1.3.0]` entry.
@@ -163,7 +163,7 @@ git commit -m "schema: add icon-style key (pulse|claudecode, default pulse)"
 ### Task 3: Wire `extension.js` to use the new setting
 
 **Files:**
-- Modify: `extension/extension.js` (constructor near line 618, `_update()` near line 1132, destroy near line 1448)
+- Modify: `extension/extension.js` (constructor near line 618, `_updateMenu()` near line 1132, destroy near line 1448)
 
 - [ ] **Step 1: Replace the static `_icon` construction with a setting-aware version**
 
@@ -190,7 +190,7 @@ Replace it with:
 
 - [ ] **Step 2: Add the `_applyIconStyle` helper method**
 
-Insert this method on the `ClaudePulseButton` class. A good location is right before `_update()`. Find the existing `_update()` method (search for `_update(`) and add this method directly above it:
+Insert this method on the `ClaudePulseButton` class. A good location is right before `_updateMenu()`. Find the existing `_updateMenu()` method (search for `_update(`) and add this method directly above it:
 
 ```javascript
     _applyIconStyle() {
@@ -212,9 +212,9 @@ Insert this method on the `ClaudePulseButton` class. A good location is right be
     }
 ```
 
-- [ ] **Step 3: Apply the color flip in `_update()`**
+- [ ] **Step 3: Apply the color flip in `_updateMenu()`**
 
-Find the lines around 1140–1143 inside `_update()`:
+Find the lines around 1140–1143 inside `_updateMenu()`:
 
 ```javascript
         this._label.text = statusText;
@@ -258,12 +258,12 @@ Replace with this expanded block (keeps theme handling unchanged, adds icon-styl
             });
             this._iconStyleChangedId = this._settings.connect('changed::icon-style', () => {
                 this._applyIconStyle();
-                this._update();
+                this._updateMenu();
             });
         }
 ```
 
-The `_update()` call after `_applyIconStyle()` re-runs the color flip immediately so the new icon picks up the current active/idle state.
+The `_updateMenu()` call after `_applyIconStyle()` re-runs the color flip immediately so the new icon picks up the current active/idle state.
 
 - [ ] **Step 5: Disconnect the listener on destroy**
 
