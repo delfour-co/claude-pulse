@@ -616,10 +616,9 @@ const ClaudePulseButton = GObject.registerClass({
         this._box = new St.BoxLayout({style_class: 'panel-status-indicators-box'});
 
         this._icon = new St.Icon({
-            gicon: Gio.icon_new_for_string(
-                GLib.build_filenamev([extensionObject.path, 'icons', 'claude-pulse-symbolic.svg'])),
             style_class: 'system-status-icon',
         });
+        this._applyIconStyle();
         this._box.add_child(this._icon);
 
         this._label = new St.Label({
@@ -717,6 +716,10 @@ const ClaudePulseButton = GObject.registerClass({
             this._themeChangedId = this._settings.connect('changed::theme', () => {
                 this._applyTheme();
                 this._graph.queue_repaint();
+            });
+            this._iconStyleChangedId = this._settings.connect('changed::icon-style', () => {
+                this._applyIconStyle();
+                this._updateMenu();
             });
         }
 
@@ -1124,6 +1127,24 @@ const ClaudePulseButton = GObject.registerClass({
         }
     }
 
+    _applyIconStyle() {
+        const style = this._settings
+            ? this._settings.get_string('icon-style')
+            : 'pulse';
+        const file = style === 'claudecode'
+            ? 'claudecode-symbolic.svg'
+            : 'claude-pulse-symbolic.svg';
+        this._icon.gicon = Gio.icon_new_for_string(
+            GLib.build_filenamev([this._extensionObject.path, 'icons', file]));
+        if (style === 'claudecode') {
+            // Color flip is applied per-update; set idle color as initial state.
+            this._icon.style = 'color: #7d7d7d;';
+        } else {
+            // Pulse icon has baked-in colors — clear any previous override.
+            this._icon.style = null;
+        }
+    }
+
     _updateMenu() {
         const agentCount = this._activeAgents.size;
         const sessionCount = this._activeSessions.size;
@@ -1141,6 +1162,13 @@ const ClaudePulseButton = GObject.registerClass({
         this._label.style_class = isActive
             ? 'claude-panel-label-active'
             : 'claude-panel-label';
+
+        // Icon color flip for the claudecode variant only.
+        if (this._settings && this._settings.get_string('icon-style') === 'claudecode') {
+            this._icon.style = isActive
+                ? 'color: #D97757;'
+                : 'color: #7d7d7d;';
+        }
 
         this._headerItem.label.text = `Claude Pulse — ${statusText}`;
 
@@ -1448,6 +1476,11 @@ const ClaudePulseButton = GObject.registerClass({
         if (this._themeChangedId && this._settings) {
             this._settings.disconnect(this._themeChangedId);
             this._themeChangedId = null;
+        }
+
+        if (this._iconStyleChangedId && this._settings) {
+            this._settings.disconnect(this._iconStyleChangedId);
+            this._iconStyleChangedId = null;
         }
 
         if (this._reloadTimerId) {
