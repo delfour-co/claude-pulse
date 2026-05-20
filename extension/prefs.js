@@ -45,6 +45,28 @@ export default class ClaudePulsePreferences extends ExtensionPreferences {
         });
         appearGroup.add(themeRow);
 
+        const iconStyleModel = new Gtk.StringList();
+        iconStyleModel.append('Pulse (default)');
+        iconStyleModel.append('Claude Code logo');
+
+        const iconStyleKeys = ['pulse', 'claudecode'];
+        const currentIconStyle = settings.get_string('icon-style');
+        const currentIconIdx = iconStyleKeys.indexOf(currentIconStyle);
+
+        const iconStyleRow = new Adw.ComboRow({
+            title: 'Panel icon',
+            subtitle: 'Pulse stays neutral; Claude Code logo turns orange when active',
+            model: iconStyleModel,
+            selected: currentIconIdx >= 0 ? currentIconIdx : 0,
+        });
+        iconStyleRow.connect('notify::selected', () => {
+            settings.set_string('icon-style', iconStyleKeys[iconStyleRow.selected]);
+        });
+        settings.connect('changed::icon-style', () => {
+            iconStyleRow.selected = iconStyleKeys.indexOf(settings.get_string('icon-style'));
+        });
+        appearGroup.add(iconStyleRow);
+
         // --- Notifications ---
         const notifGroup = new Adw.PreferencesGroup({
             title: 'Notifications',
