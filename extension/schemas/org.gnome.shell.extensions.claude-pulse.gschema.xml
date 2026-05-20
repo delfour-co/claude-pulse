@@ -87,5 +87,11 @@
       <description>Position in the top panel: left, center, right.</description>
     </key>
 
+    <key name="icon-style" type="s">
+      <default>'pulse'</default>
+      <summary>Panel systray icon style</summary>
+      <description>Panel systray icon style. One of: pulse, claudecode. The claudecode variant recolors on activity (gray idle, Anthropic orange active).</description>
+    </key>
+
   </schema>
 </schemalist>
