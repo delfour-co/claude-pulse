@@ -76,20 +76,19 @@ Notification/Stop  ──▶  (5s)       └────────────
 
 A bash hook script captures events from Claude Code and writes them to `~/.local/share/claude-pulse/events.jsonl`. The GNOME extension watches this file and renders the dashboard.
 
-## Live cost (opt-in)
+## Live cost
 
-By default, the session cost shown in the panel is only computed once per session,
-when the Stop hook fires (end of the assistant turn). To see a running estimate that
-updates after every tool call, export:
+The session cost shown in the panel updates after every tool call, prefixed with `~`
+(e.g. `~$0.42`). When the assistant turn ends, the Stop hook re-parses the full
+transcript and emits the authoritative value, dropping the `~` prefix and matching
+the canonical calculation exactly.
+
+To disable live updates and only see the final cost on Stop, export in the shell
+that launches Claude Code (e.g. in your `~/.bashrc` / `~/.zshrc`):
 
 ```bash
-export CLAUDE_PULSE_LIVE_COST=1
+export CLAUDE_PULSE_LIVE_COST=0
 ```
-
-in the shell that launches Claude Code (e.g. in your `~/.bashrc` / `~/.zshrc`). Live
-values are prefixed with `~` in the panel (e.g. `~$0.42`); the authoritative
-value emitted on Stop drops the prefix and matches the full-transcript calculation
-exactly. Disable by unsetting the variable (or setting it to anything other than `1`).
 
 Implementation notes:
 

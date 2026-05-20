@@ -50,9 +50,10 @@ case "$EVENT_NAME" in
       tool_name:$i.tool_name, tool_use_id:$i.tool_use_id
     }' >> "$MONITOR_FILE" ;;
   PostToolUse)
-    # Live-cost opt-in: emit an incremental Cost event after each tool use.
+    # Live cost: emit an incremental Cost event after each tool use.
     # The Stop hook remains authoritative and overrides with final:true.
-    if [ "${CLAUDE_PULSE_LIVE_COST:-0}" = "1" ]; then
+    # On by default; set CLAUDE_PULSE_LIVE_COST=0 to disable.
+    if [ "${CLAUDE_PULSE_LIVE_COST:-1}" = "1" ]; then
       TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty')
       MODEL=$(echo "$INPUT" | jq -r '.model // empty')
       SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')

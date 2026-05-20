@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.0] - 2026-05-20
+
+### Changes
+
+- **Live cost on by default** — `CLAUDE_PULSE_LIVE_COST` flipped from opt-in to opt-out; the panel now shows the running session cost (prefixed with `~`) without any setup. Per-tool-call overhead remains ~10 ms with zero idle cost. Set `CLAUDE_PULSE_LIVE_COST=0` to restore the previous Stop-only behavior.
+
 ## [1.1.0] - 2026-05-19
 
 ### Features

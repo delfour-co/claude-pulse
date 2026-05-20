@@ -203,26 +203,26 @@ jobs:
           bash hooks/compute-cost.sh "$TR" "claude-sonnet-4-6" "$ST" | jq -e '.input == 100 and .output == 200' > /dev/null
           echo "✓ partial trailing line ignored"
 
-      - name: Test PostToolUse no-op without opt-in
+      - name: Test PostToolUse no-op when CLAUDE_PULSE_LIVE_COST=0
         run: |
           mkdir -p /tmp/cost-live/data/claude-pulse
           rm -f /tmp/cost-live/data/claude-pulse/events.jsonl
           TR=/tmp/cost-live/t.jsonl
           echo '{"type":"assistant","message":{"model":"claude-sonnet-4-6","usage":{"input_tokens":100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":200}}}' > "$TR"
           echo "{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"sLive\",\"cwd\":\"/tmp\",\"transcript_path\":\"$TR\",\"model\":\"claude-sonnet-4-6\",\"tool_name\":\"Read\",\"tool_use_id\":\"tu1\"}" | \
-            XDG_DATA_HOME=/tmp/cost-live/data CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
-          [ ! -s /tmp/cost-live/data/claude-pulse/events.jsonl ] || { echo "ERROR: PostToolUse emitted without opt-in"; cat /tmp/cost-live/data/claude-pulse/events.jsonl; exit 1; }
-          echo "✓ PostToolUse no-op when CLAUDE_PULSE_LIVE_COST unset"
+            XDG_DATA_HOME=/tmp/cost-live/data CLAUDE_PULSE_LIVE_COST=0 CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+          [ ! -s /tmp/cost-live/data/claude-pulse/events.jsonl ] || { echo "ERROR: PostToolUse emitted when disabled"; cat /tmp/cost-live/data/claude-pulse/events.jsonl; exit 1; }
+          echo "✓ PostToolUse no-op when CLAUDE_PULSE_LIVE_COST=0"
 
-      - name: Test PostToolUse emits live Cost with opt-in
+      - name: Test PostToolUse emits live Cost by default
         run: |
           TR=/tmp/cost-live/t.jsonl
           rm -f /tmp/cost-live/data/claude-pulse/events.jsonl /tmp/cost-live/cost-state-sLive.json
           echo "{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"sLive\",\"cwd\":\"/tmp\",\"transcript_path\":\"$TR\",\"model\":\"claude-sonnet-4-6\",\"tool_name\":\"Read\",\"tool_use_id\":\"tu1\"}" | \
-            XDG_DATA_HOME=/tmp/cost-live/data CLAUDE_PULSE_LIVE_COST=1 CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
+            XDG_DATA_HOME=/tmp/cost-live/data CLAUDE_PROFILE=ci bash hooks/claude-pulse-hook.sh
           tail -1 /tmp/cost-live/data/claude-pulse/events.jsonl | jq -e '.event == "Cost" and .final == false and .cost_usd > 0' > /dev/null
           [ -f "/tmp/cost-live/cost-state-sLive.json" ] || { echo "ERROR: state file not written"; exit 1; }
-          echo "✓ PostToolUse emits Cost (final:false) with opt-in"
+          echo "✓ PostToolUse emits Cost (final:false) by default"
 
       - name: Test Stop emits authoritative Cost with final:true
         run: |
